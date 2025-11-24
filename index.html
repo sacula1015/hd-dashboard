@@ -1,0 +1,2993 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hemodialysis Patient Record</title>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+
+  <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Microsoft JhengHei', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            height: 100%;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+            color: white;
+            padding: 20px 32px;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hospital-info h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .hospital-info p {
+            margin: 6px 0 0 0;
+            font-size: 14px;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .user-info span {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* 語系切換按鈕 */
+        .lang-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px;
+            border-radius: 999px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+        }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            padding: 4px 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+        }
+
+        .lang-btn.active {
+            background: #ffffff;
+            color: #1e40af;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
+        }
+
+        .main-tabs {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+            position: fixed;
+            top: 84px;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            padding: 0 32px;
+            overflow-x: auto;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .main-tab {
+            padding: 18px 28px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #64748b;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            font-size: 15px;
+        }
+
+        .main-tab::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4);
+            transform: translateX(-50%);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .main-tab:hover {
+            color: #3b82f6;
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.05) 0%, transparent 100%);
+        }
+
+        .main-tab:hover::before {
+            width: 80%;
+        }
+
+        .main-tab.active {
+            color: #1e40af;
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, transparent 100%);
+        }
+
+        .main-tab.active::before {
+            width: 100%;
+        }
+
+        .content-wrapper {
+            margin-top: 156px;
+            padding: 32px;
+            max-width: 1600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .patient-header-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 28px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(59, 130, 246, 0.1);
+            border-left: 5px solid transparent;
+            border-image: linear-gradient(180deg, #3b82f6, #06b6d4) 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .patient-header-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(30%, -30%);
+        }
+
+        .patient-header-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .patient-header-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .patient-header-item:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .patient-header-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .patient-header-value {
+            font-size: 17px;
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        .patient-name-large {
+            font-size: 28px;
+            color: #1e40af;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .alert-banner {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 2px solid #fca5a5;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 16px rgba(220, 38, 38, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .alert-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(180deg, #dc2626, #ef4444);
+        }
+
+        .alert-icon {
+            font-size: 32px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100 { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 700;
+            color: #991b1b;
+            margin-bottom: 8px;
+            font-size: 16px;
+            letter-spacing: 0.3px;
+        }
+
+        .alert-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 14px;
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .alert-items span {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(220, 38, 38, 0.2);
+        }
+
+        .two-column-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(148, 163, 184, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4, #8b5cf6);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-label {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-size: 15px;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .vital-signs-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .vital-signs-table th {
+            background: #f8fafc;
+            padding: 12px;
+            text-align: left;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .vital-signs-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+            color: #1e293b;
+        }
+
+        .status-normal {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .status-warning {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
+        .status-danger {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .chart-view-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .toggle-btn {
+            padding: 10px 20px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toggle-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            color: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .toggle-btn:hover::before {
+            width: 200px;
+            height: 200px;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border-color: #2563eb;
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .monitoring-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .monitoring-table th {
+            background: #f8fafc;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+        }
+
+        .monitoring-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+
+        .sub-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
+            background: linear-gradient(180deg, transparent 0%, rgba(241, 245, 249, 0.3) 100%);
+            border-radius: 8px 8px 0 0;
+            padding: 8px 8px 0 8px;
+        }
+
+        .sub-tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px 8px 0 0;
+            position: relative;
+        }
+
+        .sub-tab:hover {
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .sub-tab.active {
+            color: #1e40af;
+            background: white;
+            border-bottom-color: #3b82f6;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .notes-content {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            min-height: 200px;
+        }
+
+        .note-item {
+            background: white;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-left: 3px solid #2563eb;
+        }
+
+        .note-time {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .note-text {
+            font-size: 14px;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .add-note-btn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .add-note-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+        }
+
+        .add-note-btn:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+
+        .add-note-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .add-note-btn:active {
+            transform: translateY(0);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 16px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 2px solid;
+        }
+
+        .badge-high-risk {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+
+        .badge-standard {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #1e40af;
+            border-color: #93c5fd;
+        }
+
+        @media (max-width: 1024px) {
+            .two-column-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .patient-header-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .content-wrapper {
+                padding: 16px;
+            }
+
+            .main-tabs {
+                padding: 0 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .monitoring-table {
+                font-size: 11px;
+            }
+
+            .monitoring-table th,
+            .monitoring-table td {
+                padding: 6px 4px;
+            }
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .biochem-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .biochem-table th {
+            background: #f8fafc;
+            padding: 12px;
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+        }
+
+        .biochem-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        .value-normal {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .value-warning {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
+        .value-danger {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .trend-chart-small {
+            height: 200px;
+            margin-top: 16px;
+        }
+
+        .ai-prediction-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .prediction-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.1);
+            border-top: 5px solid transparent;
+            border-image: linear-gradient(90deg, #3b82f6, #06b6d4) 1;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prediction-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .prediction-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(59, 130, 246, 0.2);
+        }
+
+        .prediction-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .prediction-value {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3b82f6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .prediction-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 16px;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+
+        .risk-indicator {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 2px solid;
+            position: relative;
+            z-index: 1;
+        }
+
+        .risk-low {
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+            color: #166534;
+            border-color: #86efac;
+        }
+
+        .risk-medium {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #92400e;
+            border-color: #fcd34d;
+        }
+
+        .risk-high {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+
+        .risk-warning {
+            background: linear-gradient(135deg, #fed7aa, #fdba74);
+            color: #9a3412;
+            border-color: #fb923c;
+        }
+
+        .feature-importance {
+            margin-top: 16px;
+        }
+
+        .feature-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .feature-label {
+            width: 120px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .feature-bar-bg {
+            flex: 1;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .feature-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb, #60a5fa);
+            transition: width 0.3s ease;
+        }
+
+        .disclaimer {
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 24px;
+            font-size: 13px;
+            color: #92400e;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2563eb;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .access-timeline {
+            position: relative;
+            padding-left: 40px;
+            margin-top: 20px;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 24px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -29px;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2563eb;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #2563eb;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 20px;
+            width: 2px;
+            height: calc(100% - 12px);
+            background: #e2e8f0;
+        }
+
+        .timeline-item:last-child::after {
+            display: none;
+        }
+
+        .timeline-date {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .timeline-content {
+            font-size: 14px;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .screening-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .screening-card {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .screening-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .screening-result {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .screening-date {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <div class="hospital-info">
+        <h1 id="hospital-name">三軍總醫院 血液透析室</h1>
+      </div>
+      <div class="header-right">
+        <div class="lang-toggle">
+          <button class="lang-btn active" data-lang="zh">中</button>
+          <button class="lang-btn" data-lang="en">EN</button>
+        </div>
+        <div class="user-info">
+          <span>護理師：汪汪</span>
+          <span>2024-03-15 08:30</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="main-tabs">
+    <div class="main-tab active" data-tab="current-dialysis" data-i18n-key="tab-current-dialysis">💧本次透析</div>
+    <div class="main-tab" data-tab="biochem-anemia" data-i18n-key="tab-biochem-anemia">🧪 生化數據</div>
+    <div class="main-tab" data-tab="dialysis-efficiency" data-i18n-key="tab-dialysis-efficiency">⚡透析效能與骨病</div>
+    <div class="main-tab" data-tab="vascular-access" data-i18n-key="tab-vascular-access">🩸血管通路</div>
+    <div class="main-tab" data-tab="infection-screening" data-i18n-key="tab-infection-screening">🦠 感染與篩檢</div>
+    <div class="main-tab" data-tab="ai-prediction" data-i18n-key="tab-ai-prediction">🤖AI 預測</div>
+    <div class="main-tab" data-tab="statistics" data-i18n-key="tab-statistics">📊統計與醫護品質</div>
+  </nav>
+
+  <div class="content-wrapper">
+    <!-- Tab 1: Current Dialysis -->
+    <div class="tab-content active" id="current-dialysis">
+      <div class="patient-header-card">
+        <div class="patient-header-grid">
+          <div class="patient-header-item">
+            <div class="patient-header-label" data-i18n-key="label-name">👤 姓名</div>
+            <div class="patient-name-large" id="patient-name" data-field="patient-name"></div>
+          </div>
+          <div class="patient-header-item">
+            <div class="patient-header-label" data-i18n-key="label-gender-age">性別 / 年齡</div>
+            <div class="patient-header-value" data-field="patient-gender-age"></div>
+          </div>
+          <div class="patient-header-item">
+            <div class="patient-header-label" data-i18n-key="label-chart-no">📋病歷號</div>
+            <div class="patient-header-value" data-field="patient-chart-no"></div>
+          </div>
+          <div class="patient-header-item">
+            <div class="patient-header-label" data-i18n-key="label-risk">⚠️病人分級</div>
+            <div class="patient-header-value">
+              <span class="badge badge-high-risk" data-field="patient-risk-badge"></span>
+            </div>
+          </div>
+          <div class="patient-header-item">
+            <div class="patient-header-label" data-i18n-key="label-doctor">👨‍⚕️主治醫師</div>
+            <div class="patient-header-value" data-field="patient-doctor"></div>
+          </div>
+          <div class="patient-header-item">
+            <div class="patient-header-label" data-i18n-key="label-start">透析起始</div>
+            <div class="patient-header-value" data-field="patient-dialysis-start"></div>
+          </div>
+          <div class="patient-header-item">
+            <div class="patient-header-label" data-i18n-key="label-ward-bed">🏥院區 / 床號</div>
+            <div class="patient-header-value" data-field="patient-ward-bed"></div>
+          </div>
+          <div class="patient-header-item">
+            <div class="patient-header-label" data-i18n-key="label-session-count">🔢透析次數</div>
+            <div class="patient-header-value" data-field="patient-session-count"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert-banner">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+          <div class="alert-title" data-i18n-key="alert-today-title">今日警示</div>
+          <div class="alert-items">
+            <span>🔴 低血壓事件 x2</span>
+            <span>🟡 肌肉抽筋 x1</span>
+            <span>🟡 未達處方脫水量 (-0.3L)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-column-layout">
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-current-summary">📋 本次透析處方 &amp; 摘要</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-session-date">📅透析日期</div>
+              <div class="info-value" data-field="session-date"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-session-shift">🌅班別</div>
+              <div class="info-value" data-field="session-shift"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-start-time">⏰開始時間</div>
+              <div class="info-value" data-field="session-start-time"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-end-time">⏱️結束時間</div>
+              <div class="info-value" data-field="session-end-time"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-duration">⏳總透析時數</div>
+              <div class="info-value" data-field="session-duration"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-machine">🖥️透析機型</div>
+              <div class="info-value" data-field="session-machine"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-dialyzer">🔬人工腎臟</div>
+              <div class="info-value" data-field="session-dialyzer"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-dialysate">🧪透析液 Ca/K</div>
+              <div class="info-value" data-field="session-dialysate"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-dry-weight">⚖️乾體重</div>
+              <div class="info-value" data-field="session-dry-weight"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-pre-weight">📊透析前體重</div>
+              <div class="info-value" data-field="session-pre-weight"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-uf-plan">💧預計脫水量</div>
+              <div class="info-value" data-field="session-uf-plan"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-uf-actual">💦實際脫水量</div>
+              <div class="info-value status-warning" data-field="session-uf-actual"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-qb">🔴血流量 (Qb)</div>
+              <div class="info-value" data-field="session-qb"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-qd">💧透析液流量 (Qd)</div>
+              <div class="info-value" data-field="session-qd"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-heparin">💉抗凝劑</div>
+              <div class="info-value" data-field="session-heparin"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label" data-i18n-key="label-access">🩸血管通路</div>
+              <div class="info-value" data-field="session-access"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-vitals">💓 透析前/後生命徵象</div>
+          <table class="vital-signs-table">
+            <thead>
+              <tr>
+                <th data-i18n-key="th-item">項目</th>
+                <th data-i18n-key="th-pre">透析前</th>
+                <th data-i18n-key="th-post">透析後</th>
+                <th data-i18n-key="th-status">狀態</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-i18n-key="row-bp-lying">🩺血壓 (臥位)</td>
+                <td data-field="vital-pre-bp-lying"></td>
+                <td data-field="vital-post-bp-lying"></td>
+                <td><span class="status-warning" data-field="vital-bp-status"></span></td>
+              </tr>
+              <tr>
+                <td data-i18n-key="row-bp-sitting">🩺血壓 (坐位)</td>
+                <td>-</td>
+                <td>105/68 mmHg</td>
+                <td><span class="status-warning">⚠️ 偏低</span></td>
+              </tr>
+              <tr>
+                <td data-i18n-key="row-pulse">💗脈搏</td>
+                <td>78 bpm</td>
+                <td>82 bpm</td>
+                <td><span class="status-normal">✅ 正常</span></td>
+              </tr>
+              <tr>
+                <td data-i18n-key="row-rr">🫁呼吸</td>
+                <td>18 /min</td>
+                <td>18 /min</td>
+                <td><span class="status-normal">✅ 正常</span></td>
+              </tr>
+              <tr>
+                <td data-i18n-key="row-temp">🌡️ 體溫</td>
+                <td>36.5°C</td>
+                <td>36.8°C</td>
+                <td><span class="status-normal">✅ 正常</span></td>
+              </tr>
+              <tr>
+                <td data-i18n-key="row-weight">⚖️體重</td>
+                <td>71.0 kg</td>
+                <td>68.8 kg</td>
+                <td><span class="status-normal">✅ 正常</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-monitoring">📊 透析過程監測</div>
+        <div class="chart-view-toggle">
+          <button class="toggle-btn active" onclick="showView('chart')" data-i18n-key="btn-chart-view">圖表視圖</button>
+          <button class="toggle-btn" onclick="showView('table')" data-i18n-key="btn-table-view">表格視圖</button>
+        </div>
+        <div id="chart-view">
+          <div class="chart-container">
+            <canvas id="monitoringChart"></canvas>
+          </div>
+        </div>
+        <div id="table-view" class="hidden">
+          <div style="overflow-x: auto;">
+            <table class="monitoring-table">
+              <thead>
+                <tr>
+                  <th>⏰ 時間</th>
+                  <th>🧠 意識</th>
+                  <th>🩺 血壓<br>(mmHg)</th>
+                  <th>💓 脈搏<br>(bpm)</th>
+                  <th>🫁 呼吸<br>(/min)</th>
+                  <th>🔴 Qb<br>(mL/min)</th>
+                  <th>📊 靜脈壓<br>(mmHg)</th>
+                  <th>💧 UFR<br>(mL/h)</th>
+                  <th>💦 累積UF<br>(L)</th>
+                  <th>🌡️ 透析液溫<br>(°C)</th>
+                  <th>🫀 SpO₂<br>(%)</th>
+                  <th>🩸 滲血</th>
+                  <th>⚠️ 特殊情況</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>08:15</td>
+                  <td>清醒</td>
+                  <td>145/85</td>
+                  <td>78</td>
+                  <td>18</td>
+                  <td>300</td>
+                  <td>120</td>
+                  <td>625</td>
+                  <td>0.0</td>
+                  <td>36.5</td>
+                  <td>98</td>
+                  <td>無</td>
+                  <td>開始透析</td>
+                </tr>
+                <tr>
+                  <td>09:00</td>
+                  <td>清醒</td>
+                  <td>135/80</td>
+                  <td>76</td>
+                  <td>18</td>
+                  <td>300</td>
+                  <td>125</td>
+                  <td>625</td>
+                  <td>0.6</td>
+                  <td>36.5</td>
+                  <td>98</td>
+                  <td>無</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <td>09:45</td>
+                  <td>清醒</td>
+                  <td class="status-warning">105/65</td>
+                  <td>82</td>
+                  <td>18</td>
+                  <td>300</td>
+                  <td>128</td>
+                  <td>625</td>
+                  <td>1.1</td>
+                  <td>36.5</td>
+                  <td>98</td>
+                  <td>無</td>
+                  <td class="status-warning">低血壓，給予NS 100mL</td>
+                </tr>
+                <tr>
+                  <td>10:30</td>
+                  <td>清醒</td>
+                  <td>120/75</td>
+                  <td>80</td>
+                  <td>18</td>
+                  <td>300</td>
+                  <td>130</td>
+                  <td>625</td>
+                  <td>1.6</td>
+                  <td>36.5</td>
+                  <td>98</td>
+                  <td>無</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <td>11:15</td>
+                  <td>清醒</td>
+                  <td class="status-warning">100/60</td>
+                  <td>85</td>
+                  <td>18</td>
+                  <td>300</td>
+                  <td>132</td>
+                  <td>400</td>
+                  <td>2.0</td>
+                  <td>36.5</td>
+                  <td>98</td>
+                  <td>無</td>
+                  <td class="status-warning">低血壓，降低UFR，給予Midodrine 5mg</td>
+                </tr>
+                <tr>
+                  <td>12:00</td>
+                  <td>清醒</td>
+                  <td>115/70</td>
+                  <td>82</td>
+                  <td>18</td>
+                  <td>300</td>
+                  <td>135</td>
+                  <td>400</td>
+                  <td>2.2</td>
+                  <td>36.5</td>
+                  <td>98</td>
+                  <td>無</td>
+                  <td>左小腿抽筋，按摩緩解</td>
+                </tr>
+                <tr>
+                  <td>12:15</td>
+                  <td>清醒</td>
+                  <td>110/70</td>
+                  <td>82</td>
+                  <td>18</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>2.2</td>
+                  <td>-</td>
+                  <td>98</td>
+                  <td>無</td>
+                  <td>結束透析</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-notes">📝 護理紀錄 / 交班 / 醫囑</div>
+        <div class="sub-tabs">
+          <div class="sub-tab active" onclick="showSubTab('pre-assessment')" data-i18n-key="sub-pre">🔍透析前評估</div>
+          <div class="sub-tab" onclick="showSubTab('nursing-notes')" data-i18n-key="sub-nursing">📋護理紀錄</div>
+          <div class="sub-tab" onclick="showSubTab('handover')" data-i18n-key="sub-handover">🔄交班事項</div>
+          <div class="sub-tab" onclick="showSubTab('orders')" data-i18n-key="sub-orders">💊醫師醫囑</div>
+        </div>
+        <div id="pre-assessment" class="notes-content">
+          <div class="note-item">
+            <div class="note-time">2024-03-15 08:00 - 護理師 王小明</div>
+            <div class="note-text">
+              <strong>下肢水腫：</strong>雙下肢輕度水腫 (+1)<br>
+              <strong>肺音：</strong>雙側呼吸音清晰，無囉音<br>
+              <strong>飲水量估計：</strong>昨日約1500mL<br>
+              <strong>體重增加：</strong>2.5kg (3.6%)<br>
+              <strong>主訴：</strong>輕微呼吸喘，活動後較明顯
+            </div>
+          </div>
+        </div>
+        <div id="nursing-notes" class="notes-content hidden">
+          <div class="note-item">
+            <div class="note-time">2024-03-15 09:45</div>
+            <div class="note-text">
+              透析進行中出現低血壓（105/65 mmHg），病人主訴頭暈。立即降低UFR至400 mL/h，給予NS 100mL快速輸注，症狀緩解。
+            </div>
+          </div>
+          <div class="note-item">
+            <div class="note-time">2024-03-15 11:15</div>
+            <div class="note-text">
+              再次出現低血壓（100/60 mmHg），病人主訴頭暈、冒冷汗。降低UFR，給予Midodrine 5mg口服，血壓逐漸回升至115/70 mmHg。
+            </div>
+          </div>
+          <div class="note-item">
+            <div class="note-time">2024-03-15 12:00</div>
+            <div class="note-text">
+              病人左小腿出現肌肉抽筋，給予局部按摩及伸展，症狀於5分鐘內緩解。
+            </div>
+          </div>
+          <div class="note-item">
+            <div class="note-time">2024-03-15 12:15</div>
+            <div class="note-text">
+              透析結束，實際脫水量2.2L（未達處方量2.5L），因低血壓事件提早終止。病人生命徵象穩定，無不適主訴，針眼無滲血。
+            </div>
+          </div>
+          <button class="add-note-btn" onclick="addNote()">+ 新增紀錄</button>
+        </div>
+        <div id="handover" class="notes-content hidden">
+          <div class="note-item">
+            <div class="note-time">交班重點</div>
+            <div class="note-text">
+              1. 本次透析因低血壓事件未達處方脫水量，下次透析需密切監測血壓變化<br>
+              2. 病人對快速脫水耐受性差，建議下次調整UFR速度<br>
+              3. 已給予Midodrine，下次透析前請評估是否需要預防性給藥<br>
+              4. 左小腿易抽筋，透析中請注意保暖及適時按摩<br>
+              5. 下次透析：2024-03-17（週日）早班
+            </div>
+          </div>
+          <button class="add-note-btn" onclick="addNote()">+ 新增交班事項</button>
+        </div>
+        <div id="orders" class="notes-content hidden">
+          <div class="note-item">
+            <div class="note-time">2024-03-15 - 許醫師</div>
+            <div class="note-text">
+              <strong>💊長期處方：</strong><br>
+              • HD 3x/week, 4 hours, Qb 300, Qd 500<br>
+              • Heparin 3000U (loading) + 1000U/h<br>
+              • 透析液：Ca 2.5, K 2.0<br>
+              • EPO 4000U SC 3x/week<br>
+              • Iron sucrose 100mg IV 1x/week<br><br>
+              <strong>⚠️本次特殊醫囑：</strong><br>
+              • 因低血壓事件，下次透析前給予Midodrine 5mg PO<br>
+              • 密切監測血壓，必要時調整乾體重
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Biochemistry & Anemia -->
+    <div class="tab-content" id="biochem-anemia">
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-biochem-monthly">🧪 月度生化值追蹤</div>
+        <div style="overflow-x: auto;">
+          <table class="biochem-table">
+            <thead>
+              <tr>
+                <th>月份</th>
+                <th>Hb<br>(g/dL)</th>
+                <th>Hct<br>(%)</th>
+                <th>Ferritin<br>(ng/mL)</th>
+                <th>TSAT<br>(%)</th>
+                <th>BUN<br>(mg/dL)</th>
+                <th>Cr<br>(mg/dL)</th>
+                <th>Na<br>(mEq/L)</th>
+                <th>K<br>(mEq/L)</th>
+                <th>Ca<br>(mg/dL)</th>
+                <th>P<br>(mg/dL)</th>
+                <th>Albumin<br>(g/dL)</th>
+                <th>CRP<br>(mg/L)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2024-03</td>
+                <td class="value-warning">9.8</td>
+                <td class="value-warning">29.5</td>
+                <td class="value-normal">285</td>
+                <td class="value-normal">32</td>
+                <td class="value-normal">68</td>
+                <td class="value-normal">10.2</td>
+                <td class="value-normal">138</td>
+                <td class="value-normal">4.8</td>
+                <td class="value-normal">9.2</td>
+                <td class="value-warning">5.8</td>
+                <td class="value-normal">3.8</td>
+                <td class="value-warning">8.5</td>
+              </tr>
+              <tr>
+                <td>2024-02</td>
+                <td class="value-warning">9.5</td>
+                <td class="value-warning">28.8</td>
+                <td class="value-normal">265</td>
+                <td class="value-normal">30</td>
+                <td class="value-normal">72</td>
+                <td class="value-normal">10.5</td>
+                <td class="value-normal">139</td>
+                <td class="value-normal">4.6</td>
+                <td class="value-normal">9.0</td>
+                <td class="value-danger">6.2</td>
+                <td class="value-normal">3.7</td>
+                <td class="value-warning">9.2</td>
+              </tr>
+              <tr>
+                <td>2024-01</td>
+                <td class="value-danger">9.2</td>
+                <td class="value-danger">27.5</td>
+                <td class="value-warning">220</td>
+                <td class="value-warning">28</td>
+                <td class="value-normal">70</td>
+                <td class="value-normal">10.8</td>
+                <td class="value-normal">137</td>
+                <td class="value-normal">4.9</td>
+                <td class="value-normal">8.8</td>
+                <td class="value-danger">6.5</td>
+                <td class="value-normal">3.6</td>
+                <td class="value-danger">12.5</td>
+              </tr>
+              <tr>
+                <td>2023-12</td>
+                <td class="value-normal">10.2</td>
+                <td class="value-normal">30.8</td>
+                <td class="value-normal">295</td>
+                <td class="value-normal">35</td>
+                <td class="value-normal">65</td>
+                <td class="value-normal">9.8</td>
+                <td class="value-normal">140</td>
+                <td class="value-normal">4.5</td>
+                <td class="value-normal">9.5</td>
+                <td class="value-warning">5.5</td>
+                <td class="value-normal">3.9</td>
+                <td class="value-normal">5.8</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top: 16px; padding: 12px; background: #f8fafc; border-radius: 6px; font-size: 13px;">
+          <strong>目標範圍：</strong> Hb 10-12 g/dL | Ferritin 200-500 ng/mL | TSAT 20-50% | P 3.5-5.5 mg/dL | Albumin ≥3.5 g/dL | CRP &lt;5 mg/L
+        </div>
+      </div>
+
+      <div class="two-column-layout">
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-anemia-trend">📈 貧血指標趨勢</div>
+          <div class="trend-chart-small">
+            <canvas id="anemiaChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-anemia-treatment">💉 貧血治療紀錄</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">💊ESA 種類</div>
+              <div class="info-value">Epoetin alfa</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">📏目前劑量</div>
+              <div class="info-value">4000U SC</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">🔁給藥頻率</div>
+              <div class="info-value">3次/週</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">鐵劑種類</div>
+              <div class="info-value">Iron sucrose</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">💉鐵劑劑量</div>
+              <div class="info-value">100mg IV</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">🔁給藥頻率</div>
+              <div class="info-value">1次/週</div>
+            </div>
+          </div>
+          <div style="margin-top: 16px; padding: 12px; background: #fef3c7; border-radius: 6px; border-left: 3px solid #f59e0b;">
+            <div style="font-size: 13px; color: #92400e;">
+              <strong>⚠️ 系統提醒：</strong><br>
+              • 連續3次 Hb &lt; 10 g/dL，建議評估ESA劑量<br>
+              • CRP偏高，可能影響ESA反應性
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Dialysis Efficiency & Bone Disease -->
+    <div class="tab-content" id="dialysis-efficiency">
+      <div class="two-column-layout">
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-efficiency">⚡ 透析效能指標</div>
+          <div class="trend-chart-small">
+            <canvas id="ktVChart"></canvas>
+          </div>
+          <div style="margin-top: 16px; padding: 12px; background: #dcfce7; border-radius: 6px;">
+            <div style="font-size: 13px; color: #166534;">
+              <strong>✅ 透析效能良好</strong><br>
+              最近3個月 Kt/V 平均：1.45（目標 ≥1.2）
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-bone">🦴 骨礦物質代謝 (CKD-MBD)</div>
+          <div class="trend-chart-small">
+            <canvas id="ckdMbdChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-mbd-medications">💊 相關用藥紀錄</div>
+        <div style="overflow-x: auto;">
+          <table class="biochem-table">
+            <thead>
+              <tr>
+                <th>藥物類別</th>
+                <th>藥物名稱</th>
+                <th>劑量</th>
+                <th>頻率</th>
+                <th>開始日期</th>
+                <th>調整紀錄</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>磷結合劑</td>
+                <td>Calcium carbonate</td>
+                <td>500mg</td>
+                <td>TID AC</td>
+                <td>2023-01-15</td>
+                <td>2024-02-01 因P偏高增量</td>
+              </tr>
+              <tr>
+                <td>活性維生素D</td>
+                <td>Calcitriol</td>
+                <td>0.25mcg</td>
+                <td>QD</td>
+                <td>2023-03-20</td>
+                <td>-</td>
+              </tr>
+              <tr>
+                <td>擬鈣劑</td>
+                <td>Cinacalcet</td>
+                <td>30mg</td>
+                <td>QD</td>
+                <td>2023-08-10</td>
+                <td>2024-01-15 因iPTH偏高開始使用</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Vascular Access -->
+    <div class="tab-content" id="vascular-access">
+      <div class="two-column-layout">
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-vascular-current">🩸 現行血管通路資訊</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">🔖通路種類</div>
+              <div class="info-value">AVF (動靜脈瘻管)</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">📍部位與側別</div>
+              <div class="info-value">左前臂橈側</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">📅建立日期</div>
+              <div class="info-value">2018-01-15</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">🎯首次使用</div>
+              <div class="info-value">2018-03-20</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">⏳使用年限</div>
+              <div class="info-value">6年2個月</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">🔍最近評估</div>
+              <div class="info-value">2024-03-15</div>
+            </div>
+          </div>
+          <div style="margin-top: 16px; padding: 12px; background: #dcfce7; border-radius: 6px;">
+            <div style="font-size: 13px; color: #166534;">
+              <strong>✅ 通路功能良好</strong><br>
+              Thrill (+) / Bruit (+) | 血流量穩定達標 | 無異常壓力
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-vascular-recent-eval">📋 最近評估紀錄</div>
+          <table class="vital-signs-table">
+            <thead>
+              <tr>
+                <th>📅 日期</th>
+                <th>👋 Thrill/Bruit</th>
+                <th>🔴 Qb達成</th>
+                <th>📊 靜脈壓</th>
+                <th>💉 針眼狀況</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2024-03-15</td>
+                <td class="status-normal">✅ 正常</td>
+                <td class="status-normal">✅ 300</td>
+                <td class="status-normal">正常</td>
+                <td class="status-normal">無滲血</td>
+              </tr>
+              <tr>
+                <td>2024-03-13</td>
+                <td class="status-normal">✅ 正常</td>
+                <td class="status-normal">✅ 300</td>
+                <td class="status-normal">正常</td>
+                <td class="status-normal">無滲血</td>
+              </tr>
+              <tr>
+                <td>2024-03-11</td>
+                <td class="status-normal">✅ 正常</td>
+                <td class="status-normal">✅ 300</td>
+                <td class="status-warning">⚠️ 偏高</td>
+                <td class="status-normal">無滲血</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-vascular-intervention">🔧 介入治療與手術紀錄</div>
+        <div class="access-timeline">
+          <div class="timeline-item">
+            <div class="timeline-date">2023-08-15</div>
+            <div class="timeline-content">
+              <strong>PTA (經皮血管成形術)</strong><br>
+              原因：靜脈壓持續偏高，懷疑狹窄<br>
+              結果：成功擴張靜脈端狹窄處，血流恢復良好
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-date">2021-03-20</div>
+            <div class="timeline-content">
+              <strong>通路修補手術</strong><br>
+              原因：動脈端假性動脈瘤形成<br>
+              結果：成功修補，通路功能維持
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-date">2018-01-15</div>
+            <div class="timeline-content">
+              <strong>AVF建立手術</strong><br>
+              部位：左前臂橈側動靜脈瘻管<br>
+              術者：血管外科 李醫師
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-vascular-history">📜 歷史通路紀錄</div>
+        <table class="vital-signs-table">
+          <thead>
+            <tr>
+              <th>🔖 通路種類</th>
+              <th>📍 部位</th>
+              <th>📅 使用期間</th>
+              <th>⚠️ 終止原因</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>AVF</td>
+              <td>左前臂橈側</td>
+              <td>2018-03 ~ 使用中</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>CVC (臨時)</td>
+              <td>右內頸靜脈</td>
+              <td>2018-01 ~ 2018-03</td>
+              <td>AVF成熟後移除</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 5: Infection & Screening -->
+    <div class="tab-content" id="infection-screening">
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-infection-screen">🦠 病毒/感染篩檢紀錄</div>
+        <div class="screening-grid">
+          <div class="screening-card">
+            <div class="screening-name">HBsAg (B型肝炎表面抗原)</div>
+            <div class="screening-result">
+              結果：<span class="value-normal">陰性 (-)</span>
+            </div>
+            <div class="screening-date">檢驗日期：2024-03-01</div>
+            <div class="screening-date">下次應檢：2024-09-01</div>
+          </div>
+          <div class="screening-card">
+            <div class="screening-name">Anti-HBs (B型肝炎表面抗體)</div>
+            <div class="screening-result">
+              結果：<span class="value-normal">陽性 (125 mIU/mL)</span>
+            </div>
+            <div class="screening-date">檢驗日期：2024-03-01</div>
+            <div class="screening-date">抗體效價足夠</div>
+          </div>
+          <div class="screening-card">
+            <div class="screening-name">Anti-HCV (C型肝炎抗體)</div>
+            <div class="screening-result">
+              結果：<span class="value-normal">陰性 (-)</span>
+            </div>
+            <div class="screening-date">檢驗日期：2024-03-01</div>
+            <div class="screening-date">下次應檢：2024-09-01</div>
+          </div>
+          <div class="screening-card">
+            <div class="screening-name">HIV (愛滋病毒抗體)</div>
+            <div class="screening-result">
+              結果：<span class="value-normal">陰性 (-)</span>
+            </div>
+            <div class="screening-date">檢驗日期：2024-01-15</div>
+            <div class="screening-date">下次應檢：2025-01-15</div>
+          </div>
+          <div class="screening-card">
+            <div class="screening-name">Syphilis (梅毒血清)</div>
+            <div class="screening-result">
+              結果：<span class="value-normal">陰性 (-)</span>
+            </div>
+            <div class="screening-date">檢驗日期：2024-01-15</div>
+            <div class="screening-date">下次應檢：2025-01-15</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-column-layout">
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-vaccine">💉 疫苗接種紀錄</div>
+          <table class="vital-signs-table">
+            <thead>
+              <tr>
+                <th>💉 疫苗種類</th>
+                <th>📅 接種日期</th>
+                <th>✅ 狀態</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>B型肝炎疫苗</td>
+                <td>2018-02-15 (完整3劑)</td>
+                <td class="status-normal">✅ 有效</td>
+              </tr>
+              <tr>
+                <td>流感疫苗</td>
+                <td>2023-10-20</td>
+                <td class="status-warning">⚠️ 需更新</td>
+              </tr>
+              <tr>
+                <td>COVID-19疫苗</td>
+                <td>2023-09-15 (第4劑)</td>
+                <td class="status-normal">✅ 已接種</td>
+              </tr>
+              <tr>
+                <td>肺炎鏈球菌疫苗</td>
+                <td>2022-05-10</td>
+                <td class="status-normal">✅ 已接種</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-infection-events">🚨 感染事件列表</div>
+          <div class="access-timeline">
+            <div class="timeline-item">
+              <div class="timeline-date">2023-11-20</div>
+              <div class="timeline-content">
+                <strong>上呼吸道感染</strong><br>
+                症狀：發燒、咳嗽、流鼻水<br>
+                處置：門診治療，抗生素7天<br>
+                與透析相關：否
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-date">2022-08-15</div>
+              <div class="timeline-content">
+                <strong>通路感染</strong><br>
+                症狀：針眼紅腫、發燒<br>
+                菌種：Staphylococcus aureus<br>
+                處置：抗生素治療14天，通路保留<br>
+                與透析相關：是
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-isolation">🛡️ 隔離與感染控制措施</div>
+        <div style="padding: 16px; background: #f8fafc; border-radius: 8px;">
+          <div style="font-size: 14px; color: #1e293b; line-height: 1.8;">
+            <strong>目前狀態：</strong><span class="status-normal" style="margin-left: 8px;">✅ 無需隔離</span><br>
+            <strong>標準防護措施：</strong>已落實<br>
+            <strong>專用機器：</strong>否<br>
+            <strong>專用床位：</strong>否<br>
+            <strong>備註：</strong>定期篩檢正常，無感染風險
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 6: AI Prediction -->
+    <div class="tab-content" id="ai-prediction">
+      <div class="ai-prediction-grid">
+        <div class="prediction-card">
+          <div class="prediction-title" data-i18n-key="pred-bmd">🦴 骨密度預測</div>
+          <div class="prediction-value">T-score: -2.1</div>
+          <div class="prediction-subtitle">預測區間：-1.8 ~ -2.4</div>
+          <div class="risk-indicator risk-medium" data-i18n-key="pred-bmd-risk">骨質疏鬆前期</div>
+          <div style="margin-top: 16px; font-size: 13px; color: #64748b;">
+            根據 Ca/P/iPTH、年齡、性別、透析年資、體重等因子推估
+          </div>
+        </div>
+        <div class="prediction-card">
+          <div class="prediction-title" data-i18n-key="pred-uf">💧 建議脫水量</div>
+          <div class="prediction-value">2.1 - 2.4 L</div>
+          <div class="prediction-subtitle" data-i18n-key="pred-uf-prescription">醫師處方：2.5 L</div>
+          <div class="risk-indicator risk-warning" data-i18n-key="pred-uf-risk">⚠️ 差距 +0.2L</div>
+          <div style="margin-top: 16px; font-size: 13px; color: #64748b;">
+            建議：考慮降低脫水量或延長透析時間，以減少低血壓風險
+          </div>
+        </div>
+        <div class="prediction-card">
+          <div class="prediction-title" data-i18n-key="pred-cramp">🦵 抽筋風險預測</div>
+          <div class="prediction-value">68%</div>
+          <div class="prediction-subtitle" data-i18n-key="pred-cramp-period">本次透析期間</div>
+          <div class="risk-indicator risk-high" data-i18n-key="pred-cramp-risk">高風險</div>
+          <div style="margin-top: 16px; font-size: 13px; color: #64748b;">
+            下肢抽筋風險較高，建議預防措施
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-ai-input-summary">🔍 模型輸入摘要</div>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">最近體重變化</div>
+            <div class="info-value">+2.5 kg (3.6%)</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">最近低血壓事件</div>
+            <div class="info-value">3次/最近5次透析</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">最近抽筋事件</div>
+            <div class="info-value">2次/最近5次透析</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">血清鈉</div>
+            <div class="info-value">138 mEq/L</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">血清鉀</div>
+            <div class="info-value">4.8 mEq/L</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">血清鈣</div>
+            <div class="info-value">9.2 mg/dL</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">血清磷</div>
+            <div class="info-value">5.8 mg/dL</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">白蛋白</div>
+            <div class="info-value">3.8 g/dL</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">血紅素</div>
+            <div class="info-value">9.8 g/dL</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">透析年資</div>
+            <div class="info-value">6年</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">BMI</div>
+            <div class="info-value">24.8 kg/m²</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">年齡</div>
+            <div class="info-value">65歲</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-ai-factor-analysis">📊 影響因子分析</div>
+        <div style="margin-bottom: 24px;">
+          <h4 style="font-size: 15px; color: #1e293b; margin-bottom: 12px;">抽筋風險主要影響因子</h4>
+          <div class="feature-importance">
+            <div class="feature-bar">
+              <div class="feature-label">高脫水量</div>
+              <div class="feature-bar-bg">
+                <div class="feature-bar-fill" style="width: 85%;"></div>
+              </div>
+            </div>
+            <div class="feature-bar">
+              <div class="feature-label">低血鈉</div>
+              <div class="feature-bar-bg">
+                <div class="feature-bar-fill" style="width: 72%;"></div>
+              </div>
+            </div>
+            <div class="feature-bar">
+              <div class="feature-label">過去抽筋史</div>
+              <div class="feature-bar-bg">
+                <div class="feature-bar-fill" style="width: 68%;"></div>
+              </div>
+            </div>
+            <div class="feature-bar">
+              <div class="feature-label">低白蛋白</div>
+              <div class="feature-bar-bg">
+                <div class="feature-bar-fill" style="width: 45%;"></div>
+              </div>
+            </div>
+            <div class="feature-bar">
+              <div class="feature-label">快速UFR</div>
+              <div class="feature-bar-bg">
+                <div class="feature-bar-fill" style="width: 38%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 15px; color: #1e293b; margin-bottom: 12px;">骨密度預測主要影響因子</h4>
+          <div class="feature-importance">
+            <div class="feature-bar">
+              <div class="feature-label">年齡</div>
+              <div class="feature-bar-bg">
+                <div class="feature-bar-fill" style="width: 90%;"></div>
+              </div>
+            </div>
+            <div class="feature-bar">
+              <div class="feature-label">透析年資</div>
+              <div class="feature-bar-bg">
+                <div class="feature-bar-fill" style="width: 78%;"></div>
+              </div>
+            </div>
+            <div class="feature-bar">
+              <div class="feature-label">高iPTH</div>
+              <div class="feature-bar-bg">
+                <div class="feature-bar-fill" style="width: 65%;"></div>
+              </div>
+            </div>
+            <div class="feature-bar">
+              <div class="feature-label">高血磷</div>
+              <div class="feature-bar-bg">
+                <div class="feature-bar-fill" style="width: 52%;"></div>
+              </div>
+            </div>
+            <div class="feature-bar">
+              <div class="feature-label">性別(男)</div>
+              <div class="feature-bar-bg">
+                <div class="feature-bar-fill" style="width: 42%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-ai-history-vs-actual">📈 歷史預測 vs 實際結果</div>
+        <div style="overflow-x: auto;">
+          <table class="biochem-table">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>預測抽筋風險</th>
+                <th>實際抽筋</th>
+                <th>預測UF (L)</th>
+                <th>實際UF (L)</th>
+                <th>誤差</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2024-03-15</td>
+                <td class="value-danger">高 (68%)</td>
+                <td class="value-danger">是</td>
+                <td>2.1-2.4</td>
+                <td>2.2</td>
+                <td class="value-normal">✅ 準確</td>
+              </tr>
+              <tr>
+                <td>2024-03-13</td>
+                <td class="value-warning">中 (45%)</td>
+                <td class="value-normal">否</td>
+                <td>2.3-2.6</td>
+                <td>2.5</td>
+                <td class="value-normal">✅ 準確</td>
+              </tr>
+              <tr>
+                <td>2024-03-11</td>
+                <td class="value-danger">高 (72%)</td>
+                <td class="value-danger">是</td>
+                <td>2.0-2.3</td>
+                <td>2.4</td>
+                <td class="value-warning">⚠️ +0.1L</td>
+              </tr>
+              <tr>
+                <td>2024-03-08</td>
+                <td class="value-normal">低 (25%)</td>
+                <td class="value-normal">否</td>
+                <td>2.2-2.5</td>
+                <td>2.3</td>
+                <td class="value-normal">✅ 準確</td>
+              </tr>
+              <tr>
+                <td>2024-03-06</td>
+                <td class="value-warning">中 (52%)</td>
+                <td class="value-normal">否</td>
+                <td>2.4-2.7</td>
+                <td>2.6</td>
+                <td class="value-normal">✅ 準確</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top: 16px; padding: 12px; background: #f8fafc; border-radius: 6px; font-size: 13px;">
+          <strong>模型準確度：</strong> 抽筋預測準確率 82% | UF預測平均誤差 ±0.15L
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-ai-suggestions">💡 建議與注意事項</div>
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
+          <h4 style="font-size: 14px; font-weight: 600; color: #92400e; margin-bottom: 8px;">⚠️ 抽筋風險偏高建議</h4>
+          <ul style="margin: 0; padding-left: 20px; color: #92400e; font-size: 13px; line-height: 1.8;">
+            <li>考慮降低單次脫水量至2.0-2.2L</li>
+            <li>可評估延長透析時間至4.5小時</li>
+            <li>提醒病人透析前避免過度禁食</li>
+            <li>透析中注意下肢保暖</li>
+            <li>必要時可預防性給予鈣劑或調整透析液鈣濃度</li>
+          </ul>
+        </div>
+        <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
+          <h4 style="font-size: 14px; font-weight: 600; color: #991b1b; margin-bottom: 8px;">🦴 骨密度偏低風險建議</h4>
+          <ul style="margin: 0; padding-left: 20px; color: #991b1b; font-size: 13px; line-height: 1.8;">
+            <li>建議安排正式骨密度檢查(DXA)確認</li>
+            <li>檢討Ca/P/iPTH控制，考慮調整用藥</li>
+            <li>評估維生素D補充是否足夠</li>
+            <li>衛教病人注意跌倒預防</li>
+            <li>必要時會診骨科或內分泌科</li>
+          </ul>
+        </div>
+        <div style="background: #dbeafe; border-left: 4px solid #2563eb; padding: 16px; border-radius: 6px;">
+          <h4 style="font-size: 14px; font-weight: 600; color: #1e40af; margin-bottom: 8px;">💧 脫水量建議</h4>
+          <ul style="margin: 0; padding-left: 20px; color: #1e40af; font-size: 13px; line-height: 1.8;">
+            <li>建議脫水量2.1-2.4L較為安全</li>
+            <li>目前處方2.5L略高，可能增加低血壓風險</li>
+            <li>建議與醫師討論調整處方或延長透析時間</li>
+            <li>密切監測透析中血壓變化</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <strong>⚠️ 重要聲明：</strong> 此AI預測結果僅供臨床輔助參考，不取代醫師的專業判斷與決策。所有治療方案的調整仍需由主治醫師評估後決定。
+      </div>
+    </div>
+
+    <!-- Tab 7: Statistics & Quality -->
+    <div class="tab-content" id="statistics">
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-stats-overview">📊 整體品質指標總覽</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">1.42</div>
+            <div class="stat-label" data-i18n-key="stat-ktv">平均 Kt/V</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">78%</div>
+            <div class="stat-label" data-i18n-key="stat-hb">Hb 達標率</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">65%</div>
+            <div class="stat-label" data-i18n-key="stat-p">P 控制達標率</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">8.5%</div>
+            <div class="stat-label" data-i18n-key="stat-hypotension">低血壓事件率</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">5.2%</div>
+            <div class="stat-label" data-i18n-key="stat-cramp">抽筋事件率</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">2.1%</div>
+            <div class="stat-label" data-i18n-key="stat-early-stop">提前終止率</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-column-layout">
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-quality-trend">📈 品質指標趨勢 (月度)</div>
+          <div class="trend-chart-small">
+            <canvas id="qualityTrendChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" data-i18n-key="card-events-month">🚨 事件統計 (本月)</div>
+          <table class="vital-signs-table">
+            <thead>
+              <tr>
+                <th>事件類型</th>
+                <th>次數</th>
+                <th>較上月</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>通路血栓</td>
+                <td>2</td>
+                <td class="status-normal">↓ -1</td>
+              </tr>
+              <tr>
+                <td>PTA介入</td>
+                <td>3</td>
+                <td class="status-normal">→ 0</td>
+              </tr>
+              <tr>
+                <td>菌血症</td>
+                <td>1</td>
+                <td class="status-normal">↓ -1</td>
+              </tr>
+              <tr>
+                <td>通路感染</td>
+                <td>2</td>
+                <td class="status-warning">↑ +1</td>
+              </tr>
+              <tr>
+                <td>轉急診</td>
+                <td>4</td>
+                <td class="status-normal">↓ -2</td>
+              </tr>
+              <tr>
+                <td>住院</td>
+                <td>6</td>
+                <td class="status-normal">→ 0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-key="card-ai-performance">🤖 AI 模型整體表現</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">82%</div>
+            <div class="stat-label" data-i18n-key="stat-ai-cramp">抽筋預測準確率</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">±0.15L</div>
+            <div class="stat-label" data-i18n-key="stat-ai-uf">UF預測平均誤差</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">88%</div>
+            <div class="stat-label" data-i18n-key="stat-ai-hypotension">低血壓預測靈敏度</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">0.92</div>
+            <div class="stat-label" data-i18n-key="stat-ai-bmd">骨密度預測相關係數</div>
+          </div>
+        </div>
+        <div style="margin-top: 16px; padding: 12px; background: #dcfce7; border-radius: 6px; font-size: 13px; color: #166534;">
+          <strong>✅ 模型表現良好</strong><br>
+          AI預測系統持續學習優化中，整體準確度符合臨床應用標準
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+        const defaultConfig = {
+            patient_name: "陳偉明",
+            hospital_name: "台大醫院",
+            department_name: "血液透析室"
+        };
+
+        // === 語系字典 ===
+        let currentLang = 'zh';
+
+        const i18n = {
+            zh: {
+                'tab-current-dialysis': '💧本次透析',
+                'tab-biochem-anemia': '🧪 生化數據',
+                'tab-dialysis-efficiency': '⚡透析效能與骨病',
+                'tab-vascular-access': '🩸血管通路',
+                'tab-infection-screening': '🦠 感染與篩檢',
+                'tab-ai-prediction': '🤖AI 預測',
+                'tab-statistics': '📊統計與醫護品質',
+
+                'label-name': '👤 姓名',
+                'label-gender-age': '性別 / 年齡',
+                'label-chart-no': '📋病歷號',
+                'label-risk': '⚠️病人分級',
+                'label-doctor': '👨‍⚕️主治醫師',
+                'label-start': '透析起始',
+                'label-ward-bed': '🏥院區 / 床號',
+                'label-session-count': '🔢透析次數',
+
+                'alert-today-title': '今日警示',
+
+                'card-current-summary': '📋 本次透析處方 & 摘要',
+                'label-session-date': '📅透析日期',
+                'label-session-shift': '🌅班別',
+                'label-start-time': '⏰開始時間',
+                'label-end-time': '⏱️結束時間',
+                'label-duration': '⏳總透析時數',
+                'label-machine': '🖥️透析機型',
+                'label-dialyzer': '🔬人工腎臟',
+                'label-dialysate': '🧪透析液 Ca/K',
+                'label-dry-weight': '⚖️乾體重',
+                'label-pre-weight': '📊透析前體重',
+                'label-uf-plan': '💧預計脫水量',
+                'label-uf-actual': '💦實際脫水量',
+                'label-qb': '🔴血流量 (Qb)',
+                'label-qd': '💧透析液流量 (Qd)',
+                'label-heparin': '💉抗凝劑',
+                'label-access': '🩸血管通路',
+
+                'card-vitals': '💓 透析前/後生命徵象',
+                'th-item': '項目',
+                'th-pre': '透析前',
+                'th-post': '透析後',
+                'th-status': '狀態',
+                'row-bp-lying': '🩺血壓 (臥位)',
+                'row-bp-sitting': '🩺血壓 (坐位)',
+                'row-pulse': '💗脈搏',
+                'row-rr': '🫁呼吸',
+                'row-temp': '🌡️ 體溫',
+                'row-weight': '⚖️體重',
+
+                'card-monitoring': '📊 透析過程監測',
+                'btn-chart-view': '圖表視圖',
+                'btn-table-view': '表格視圖',
+
+                'card-notes': '📝 護理紀錄 / 交班 / 醫囑',
+                'sub-pre': '🔍透析前評估',
+                'sub-nursing': '📋護理紀錄',
+                'sub-handover': '🔄交班事項',
+                'sub-orders': '💊醫師醫囑',
+
+                'card-biochem-monthly': '🧪 月度生化值追蹤',
+                'card-anemia-trend': '📈 貧血指標趨勢',
+                'card-anemia-treatment': '💉 貧血治療紀錄',
+
+                'card-efficiency': '⚡ 透析效能指標',
+                'card-bone': '🦴 骨礦物質代謝 (CKD-MBD)',
+                'card-mbd-medications': '💊 相關用藥紀錄',
+
+                'card-vascular-current': '🩸 現行血管通路資訊',
+                'card-vascular-recent-eval': '📋 最近評估紀錄',
+                'card-vascular-intervention': '🔧 介入治療與手術紀錄',
+                'card-vascular-history': '📜 歷史通路紀錄',
+
+                'card-infection-screen': '🦠 病毒/感染篩檢紀錄',
+                'card-vaccine': '💉 疫苗接種紀錄',
+                'card-infection-events': '🚨 感染事件列表',
+                'card-isolation': '🛡️ 隔離與感染控制措施',
+
+                'pred-bmd': '🦴 骨密度預測',
+                'pred-bmd-risk': '骨質疏鬆前期',
+                'pred-uf': '💧 建議脫水量',
+                'pred-uf-prescription': '醫師處方：2.5 L',
+                'pred-uf-risk': '⚠️ 差距 +0.2L',
+                'pred-cramp': '🦵 抽筋風險預測',
+                'pred-cramp-period': '本次透析期間',
+                'pred-cramp-risk': '高風險',
+
+                'card-ai-input-summary': '🔍 模型輸入摘要',
+                'card-ai-factor-analysis': '📊 影響因子分析',
+                'card-ai-history-vs-actual': '📈 歷史預測 vs 實際結果',
+                'card-ai-suggestions': '💡 建議與注意事項',
+
+                'card-stats-overview': '📊 整體品質指標總覽',
+                'stat-ktv': '平均 Kt/V',
+                'stat-hb': 'Hb 達標率',
+                'stat-p': 'P 控制達標率',
+                'stat-hypotension': '低血壓事件率',
+                'stat-cramp': '抽筋事件率',
+                'stat-early-stop': '提前終止率',
+
+                'card-quality-trend': '📈 品質指標趨勢 (月度)',
+                'card-events-month': '🚨 事件統計 (本月)',
+                'card-ai-performance': '🤖 AI 模型整體表現',
+                'stat-ai-cramp': '抽筋預測準確率',
+                'stat-ai-uf': 'UF預測平均誤差',
+                'stat-ai-hypotension': '低血壓預測靈敏度',
+                'stat-ai-bmd': '骨密度預測相關係數'
+            },
+            en: {
+                'tab-current-dialysis': '💧Current Dialysis',
+                'tab-biochem-anemia': '🧪 Biochemistry & Anemia',
+                'tab-dialysis-efficiency': '⚡ Dialysis Efficiency & Bone',
+                'tab-vascular-access': '🩸 Vascular Access',
+                'tab-infection-screening': '🦠 Infection & Screening',
+                'tab-ai-prediction': '🤖 AI Prediction',
+                'tab-statistics': '📊 Statistics & Quality',
+
+                'label-name': '👤 Name',
+                'label-gender-age': 'Gender / Age',
+                'label-chart-no': '📋Chart No.',
+                'label-risk': '⚠️Risk Category',
+                'label-doctor': '👨‍⚕️Attending Physician',
+                'label-start': 'Dialysis Start',
+                'label-ward-bed': '🏥Ward / Bed',
+                'label-session-count': '🔢Dialysis Count',
+
+                'alert-today-title': 'Today\'s Alerts',
+
+                'card-current-summary': '📋 Current Dialysis Prescription & Summary',
+                'label-session-date': '📅Dialysis Date',
+                'label-session-shift': '🌅Shift',
+                'label-start-time': '⏰Start Time',
+                'label-end-time': '⏱️End Time',
+                'label-duration': '⏳Total Duration',
+                'label-machine': '🖥️Machine',
+                'label-dialyzer': '🔬Dialyzer',
+                'label-dialysate': '🧪Dialysate Ca/K',
+                'label-dry-weight': '⚖️Dry Weight',
+                'label-pre-weight': '📊Pre-dialysis Weight',
+                'label-uf-plan': '💧Planned UF',
+                'label-uf-actual': '💦Actual UF',
+                'label-qb': '🔴Blood Flow (Qb)',
+                'label-qd': '💧Dialysate Flow (Qd)',
+                'label-heparin': '💉Anticoagulant',
+                'label-access': '🩸Access Type',
+
+                'card-vitals': '💓 Pre / Post Vital Signs',
+                'th-item': 'Item',
+                'th-pre': 'Pre',
+                'th-post': 'Post',
+                'th-status': 'Status',
+                'row-bp-lying': '🩺BP (Supine)',
+                'row-bp-sitting': '🩺BP (Sitting)',
+                'row-pulse': '💗Pulse',
+                'row-rr': '🫁Respiratory Rate',
+                'row-temp': '🌡️Temperature',
+                'row-weight': '⚖️Weight',
+
+                'card-monitoring': '📊 Intra-dialytic Monitoring',
+                'btn-chart-view': 'Chart View',
+                'btn-table-view': 'Table View',
+
+                'card-notes': '📝 Nursing Notes / Handover / Orders',
+                'sub-pre': '🔍Pre-dialysis Assessment',
+                'sub-nursing': '📋Nursing Notes',
+                'sub-handover': '🔄Handover',
+                'sub-orders': '💊Physician Orders',
+
+                'card-biochem-monthly': '🧪 Monthly Biochemistry Trend',
+                'card-anemia-trend': '📈 Anemia Indices Trend',
+                'card-anemia-treatment': '💉 Anemia Treatment Record',
+
+                'card-efficiency': '⚡ Dialysis Efficiency Indices',
+                'card-bone': '🦴 CKD-MBD (Bone & Mineral)',
+                'card-mbd-medications': '💊 Related Medications',
+
+                'card-vascular-current': '🩸 Current Vascular Access',
+                'card-vascular-recent-eval': '📋 Recent Access Evaluation',
+                'card-vascular-intervention': '🔧 Interventions & Surgery',
+                'card-vascular-history': '📜 Access History',
+
+                'card-infection-screen': '🦠 Viral / Infection Screening',
+                'card-vaccine': '💉 Vaccination Record',
+                'card-infection-events': '🚨 Infection Events',
+                'card-isolation': '🛡️ Isolation & Infection Control',
+
+                'pred-bmd': '🦴 Bone Density Prediction',
+                'pred-bmd-risk': 'Osteopenia (Predicted)',
+                'pred-uf': '💧 Recommended UF Volume',
+                'pred-uf-prescription': 'Prescription: 2.5 L',
+                'pred-uf-risk': '⚠️ Difference +0.2 L',
+                'pred-cramp': '🦵 Cramp Risk Prediction',
+                'pred-cramp-period': 'This Session',
+                'pred-cramp-risk': 'High Risk',
+
+                'card-ai-input-summary': '🔍 Model Input Summary',
+                'card-ai-factor-analysis': '📊 Feature Importance',
+                'card-ai-history-vs-actual': '📈 Predicted vs. Actual',
+                'card-ai-suggestions': '💡 Suggestions & Precautions',
+
+                'card-stats-overview': '📊 Overall Quality Overview',
+                'stat-ktv': 'Mean Kt/V',
+                'stat-hb': 'Hb Target Achievement',
+                'stat-p': 'P Control Achievement',
+                'stat-hypotension': 'Intradialytic Hypotension Rate',
+                'stat-cramp': 'Muscle Cramp Rate',
+                'stat-early-stop': 'Early Termination Rate',
+
+                'card-quality-trend': '📈 Monthly Quality Trend',
+                'card-events-month': '🚨 Events This Month',
+                'card-ai-performance': '🤖 AI Model Performance',
+                'stat-ai-cramp': 'Cramp Prediction Accuracy',
+                'stat-ai-uf': 'UF Prediction Mean Error',
+                'stat-ai-hypotension': 'Hypotension Sensitivity',
+                'stat-ai-bmd': 'BMD Prediction Correlation'
+            }
+        };
+
+        function applyLanguage(lang) {
+            currentLang = lang;
+            const dict = i18n[lang] || {};
+            document.querySelectorAll('[data-i18n-key]').forEach(el => {
+                const key = el.dataset.i18nKey;
+                if (key && dict[key]) {
+                    el.textContent = dict[key];
+                }
+            });
+        }
+
+        // 快速抓 data-field helper
+        const field = (name) => document.querySelector(`[data-field="${name}"]`);
+
+        // 本次透析區塊模組
+        const sections = {
+            currentDialysis: {
+                fill(data) {
+                    const p = data.patient;
+                    const s = data.session;
+                    const v = data.vitals;
+
+                    // 病人 header
+                    if (p) {
+                        const nameEl = field('patient-name');
+                        if (nameEl) nameEl.textContent = p.name;
+
+                        const gaEl = field('patient-gender-age');
+                        if (gaEl) gaEl.textContent = `${p.gender === 'M' ? (currentLang === 'en' ? 'Male' : '男') : (currentLang === 'en' ? 'Female' : '女')} / ${p.age}${currentLang === 'en' ? ' yrs' : '歲'}`;
+
+                        const chartEl = field('patient-chart-no');
+                        if (chartEl) chartEl.textContent = p.chartNo;
+
+                        const docEl = field('patient-doctor');
+                        if (docEl) docEl.textContent = p.doctor;
+
+                        const startEl = field('patient-dialysis-start');
+                        if (startEl) startEl.textContent = p.dialysisStart;
+
+                        const wardEl = field('patient-ward-bed');
+                        if (wardEl) wardEl.textContent = p.wardBed;
+
+                        const cntEl = field('patient-session-count');
+                        if (cntEl) cntEl.textContent = p.sessionCount;
+
+                        const riskBadge = field('patient-risk-badge');
+                        if (riskBadge) {
+                            riskBadge.textContent = p.riskLabel;
+                            riskBadge.classList.remove('badge-high-risk', 'badge-standard');
+                            if (p.riskLevel === 'high') {
+                                riskBadge.classList.add('badge-high-risk');
+                            } else {
+                                riskBadge.classList.add('badge-standard');
+                            }
+                        }
+                    }
+
+                    // 本次透析處方
+                    if (s) {
+                        const map = {
+                            'session-date': s.date,
+                            'session-shift': s.shift,
+                            'session-start-time': s.startTime,
+                            'session-end-time': s.endTime,
+                            'session-duration': s.duration,
+                            'session-machine': s.machine,
+                            'session-dialyzer': s.dialyzer,
+                            'session-dialysate': `${s.dialysateCa}/${s.dialysateK} mEq/L`,
+                            'session-dry-weight': `${s.dryWeight} kg`,
+                            'session-pre-weight': `${s.preWeight} kg`,
+                            'session-uf-plan': `${s.ufPlan} L`,
+                            'session-uf-actual': `${s.ufActual} L`,
+                            'session-qb': `${s.qb} mL/min`,
+                            'session-qd': `${s.qd} mL/min`,
+                            'session-heparin': s.heparin,
+                            'session-access': s.access
+                        };
+                        Object.keys(map).forEach(k => {
+                            const el = field(k);
+                            if (el) el.textContent = map[k];
+                        });
+                    }
+
+                    // 生命徵象示範
+                    if (v) {
+                        const preBP = field('vital-pre-bp-lying');
+                        if (preBP) preBP.textContent = v.pre.bpLying + ' mmHg';
+
+                        const postBP = field('vital-post-bp-lying');
+                        if (postBP) postBP.textContent = v.post.bpLying + ' mmHg';
+
+                        const statusEl = field('vital-bp-status');
+                        if (statusEl) statusEl.textContent = v.bpStatusText;
+                    }
+                }
+            }
+        };
+
+        // 示範用假資料，之後可以換成 API 回傳
+        const demoSessionData = {
+            patient: {
+                name: '陳偉明',
+                gender: 'M',
+                age: 65,
+                chartNo: '2583368',
+                doctor: '許醫師',
+                dialysisStart: '2018年3月',
+                wardBed: '總院 / A01',
+                sessionCount: '本月第12次 / 累積第936次',
+                riskLevel: 'high',
+                riskLabel: '高風險'
+            },
+            session: {
+                date: '2024-03-15',
+                shift: '早班',
+                startTime: '08:15',
+                endTime: '12:15',
+                duration: '4小時',
+                machine: 'Fresenius 5008S',
+                dialyzer: 'FX80',
+                dialysateCa: 2.5,
+                dialysateK: 2.0,
+                dryWeight: 68.5,
+                preWeight: 71.0,
+                ufPlan: 2.5,
+                ufActual: 2.2,
+                qb: 300,
+                qd: 500,
+                heparin: 'Heparin 3000U',
+                access: 'AVF 左前臂'
+            },
+            vitals: {
+                pre: { bpLying: '145/85' },
+                post: { bpLying: '110/70' },
+                bpStatusText: '⚠️ 偏低'
+            },
+            monitoring: [
+                { time: '08:15', sbp: 145, dbp: 85, uf_cum: 0.0 },
+                { time: '09:00', sbp: 135, dbp: 80, uf_cum: 0.6 },
+                { time: '09:45', sbp: 105, dbp: 65, uf_cum: 1.1 },
+                { time: '10:30', sbp: 120, dbp: 75, uf_cum: 1.6 },
+                { time: '11:15', sbp: 100, dbp: 60, uf_cum: 2.0 },
+                { time: '12:00', sbp: 115, dbp: 70, uf_cum: 2.2 },
+                { time: '12:15', sbp: 110, dbp: 70, uf_cum: 2.2 }
+            ]
+        };
+
+        // Tab switching
+        document.querySelectorAll('.main-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+
+                document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // View toggle
+        function showView(view) {
+            const chartView = document.getElementById('chart-view');
+            const tableView = document.getElementById('table-view');
+            const buttons = document.querySelectorAll('.toggle-btn');
+
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            if (view === 'chart') {
+                chartView.classList.remove('hidden');
+                tableView.classList.add('hidden');
+                buttons[0].classList.add('active');
+            } else {
+                chartView.classList.add('hidden');
+                tableView.classList.remove('hidden');
+                buttons[1].classList.add('active');
+            }
+        }
+
+        // Sub-tab switching
+        function showSubTab(tabName) {
+            document.querySelectorAll('.sub-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.notes-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(tabName).classList.remove('hidden');
+        }
+
+        // Add note function
+        function addNote() {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+            modal.innerHTML = `
+                <div style="background: white; padding: 24px; border-radius: 12px; max-width: 500px; width: 90%;">
+                    <h3 style="margin: 0 0 16px 0; color: #1e293b;">新增紀錄</h3>
+                    <textarea id="noteInput" style="width: 100%; height: 120px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-family: inherit; font-size: 14px; resize: vertical;" placeholder="請輸入紀錄內容..."></textarea>
+                    <div style="display: flex; gap: 12px; margin-top: 16px; justify-content: flex-end;">
+                        <button onclick="this.closest('div').parentElement.remove()" style="padding: 8px 16px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; cursor: pointer;">取消</button>
+                        <button onclick="saveNote()" style="padding: 8px 16px; border: none; background: #2563eb; color: white; border-radius: 6px; cursor: pointer;">儲存</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function saveNote() {
+            const input = document.getElementById('noteInput');
+            const noteText = input.value.trim();
+
+            if (noteText) {
+                const now = new Date();
+                const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+                const activeContent = document.querySelector('.notes-content:not(.hidden)');
+                const noteItem = document.createElement('div');
+                noteItem.className = 'note-item';
+                noteItem.innerHTML = `
+                    <div class="note-time">${timeStr} - 護理師 王小明</div>
+                    <div class="note-text">${noteText}</div>
+                `;
+
+                const addBtn = activeContent.querySelector('.add-note-btn');
+                activeContent.insertBefore(noteItem, addBtn);
+
+                document.querySelector('div[style*="position: fixed"]').remove();
+            }
+        }
+
+        let monitoringChart;
+
+        function buildMonitoringChart() {
+            const monitoringCtx = document.getElementById('monitoringChart');
+            if (!monitoringCtx) return;
+
+            monitoringChart = new Chart(monitoringCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '收縮壓 (mmHg)',
+                        data: [],
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    }, {
+                        label: '舒張壓 (mmHg)',
+                        data: [],
+                        borderColor: '#60a5fa',
+                        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    }, {
+                        label: '累積UF (L)',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 50,
+                            max: 160,
+                            title: { display: true, text: '血壓 (mmHg)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            min: 0,
+                            max: 3,
+                            title: { display: true, text: '累積UF (L)' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        }
+
+        function updateMonitoringChart(rows) {
+            if (!monitoringChart) return;
+            monitoringChart.data.labels = rows.map(r => r.time);
+            monitoringChart.data.datasets[0].data = rows.map(r => r.sbp);
+            monitoringChart.data.datasets[1].data = rows.map(r => r.dbp);
+            monitoringChart.data.datasets[2].data = rows.map(r => r.uf_cum);
+            monitoringChart.update();
+        }
+
+        // 其他圖維持原本靜態資料
+        function initOtherCharts() {
+            // Anemia Chart
+            const anemiaCtx = document.getElementById('anemiaChart');
+            if (anemiaCtx) {
+                new Chart(anemiaCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['2023-12', '2024-01', '2024-02', '2024-03'],
+                        datasets: [{
+                            label: 'Hb (g/dL)',
+                            data: [10.2, 9.2, 9.5, 9.8],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4
+                        }, {
+                            label: 'Ferritin (ng/mL)',
+                            data: [295, 220, 265, 285],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 8,
+                                max: 12,
+                                title: { display: true, text: 'Hb (g/dL)' }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                min: 0,
+                                max: 500,
+                                title: { display: true, text: 'Ferritin (ng/mL)' },
+                                grid: { drawOnChartArea: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Kt/V Chart
+            const ktVCtx = document.getElementById('ktVChart');
+            if (ktVCtx) {
+                new Chart(ktVCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['2023-12', '2024-01', '2024-02', '2024-03'],
+                        datasets: [{
+                            label: 'Kt/V',
+                            data: [1.48, 1.42, 1.45, 1.43],
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 1.0,
+                                max: 2.0,
+                                title: { display: true, text: 'Kt/V' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // CKD-MBD Chart
+            const ckdMbdCtx = document.getElementById('ckdMbdChart');
+            if (ckdMbdCtx) {
+                new Chart(ckdMbdCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['2023-12', '2024-01', '2024-02', '2024-03'],
+                        datasets: [{
+                            label: 'Ca (mg/dL)',
+                            data: [9.5, 8.8, 9.0, 9.2],
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            tension: 0.4
+                        }, {
+                            label: 'P (mg/dL)',
+                            data: [5.5, 6.5, 6.2, 5.8],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 3,
+                                max: 12,
+                                title: { display: true, text: 'mg/dL' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Quality Trend Chart
+            const qualityCtx = document.getElementById('qualityTrendChart');
+            if (qualityCtx) {
+                new Chart(qualityCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['2023-10', '2023-11', '2023-12', '2024-01', '2024-02', '2024-03'],
+                        datasets: [{
+                            label: 'Hb達標率 (%)',
+                            data: [72, 75, 80, 76, 78, 78],
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            tension: 0.4
+                        }, {
+                            label: 'P控制達標率 (%)',
+                            data: [58, 62, 68, 63, 65, 65],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                title: { display: true, text: '達標率 (%)' }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        async function loadSessionDemo() {
+            const data = demoSessionData; // 之後換成 API 回傳
+            sections.currentDialysis.fill(data);
+            updateMonitoringChart(data.monitoring);
+        }
+
+        async function onConfigChange(config) {
+            const pn = document.getElementById('patient-name');
+            if (pn) pn.textContent = config.patient_name || defaultConfig.patient_name;
+
+            const hn = document.getElementById('hospital-name');
+            if (hn) hn.textContent = config.hospital_name || defaultConfig.hospital_name;
+
+            const dn = document.getElementById('department-name');
+            if (dn) dn.textContent = config.department_name || defaultConfig.department_name;
+        }
+
+        // Canva elementSdk（在 Canva 裡才會存在）
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig,
+                onConfigChange,
+                mapToCapabilities: (config) => ({
+                    recolorables: [],
+                    borderables: [],
+                    fontEditable: undefined,
+                    fontSizeable: undefined
+                }),
+                mapToEditPanelValues: (config) => new Map([
+                    ["patient_name", config.patient_name || defaultConfig.patient_name],
+                    ["hospital_name", config.hospital_name || defaultConfig.hospital_name],
+                    ["department_name", config.department_name || defaultConfig.department_name]
+                ])
+            });
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // 語系按鈕事件
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const lang = btn.dataset.lang || 'zh';
+                    applyLanguage(lang);
+                    // 重新渲染病人 header 中的性別/年齡顯示
+                    sections.currentDialysis.fill(demoSessionData);
+                });
+            });
+
+            applyLanguage(currentLang);
+            buildMonitoringChart();
+            initOtherCharts();
+            loadSessionDemo();
+        });
+  </script>
+</body>
+</html>
